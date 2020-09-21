@@ -1,0 +1,93 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Configure AWS SSO Account Assignment
+
+Parameters: 
+  pAwsSsoInsanceArn: 
+    Type: String
+    Default: 'arn:aws:sso:::instance/ssoins-xxxxxxxxxxxxxxx'
+    Description: 'Specify your AWS SSO Instance ARN.'
+
+# Define User/Group GUIDs and AWS account IDs
+Mappings: 
+  mUsers:
+    User1:
+      Id: 'f81d4faxge-7dec11d8-a765-3at5-80e4-00a0c91e6bf6'
+  mGroups:
+    Group1:
+      Id: 'f81d4faxge-60b1e9ac-edda-4c9a-a4fd-5f26197afb79'
+    Group2:
+      Id: 'f81d4faxge-60b1e9ac-edda-4c9a-a4fd-5f26197afb79'
+  mAccounts:
+    Account1:
+      Id: '111111111111'
+    Account2:
+      Id: '222222222222'
+    Account3:
+      Id: '333333333333'
+
+Resources:
+# Permission Set
+  rPermissionSetAdministratorAccess:
+    Type: AWS::SSO::PermissionSet
+    Properties:
+      InstanceArn: !Ref pAwsSsoInsanceArn
+      Name: 'AdministratorAccess'
+      ManagedPolicies:
+        - 'arn:aws:iam::aws:policy/AdministratorAccess'
+
+  rPermissionSetSecurityAudit:
+    Type: AWS::SSO::PermissionSet
+    Properties:
+      InstanceArn: !Ref pAwsSsoInsanceArn
+      Name: 'SecurityAudit'
+      ManagedPolicies:
+        - 'arn:aws:iam::aws:policy/SecurityAudit'
+
+  rPermissionSetViewOnlyAccess:
+    Type: AWS::SSO::PermissionSet
+    Properties:
+      InstanceArn: !Ref pAwsSsoInsanceArn
+      Name: 'ViewOnlyAccess'
+      ManagedPolicies:
+        - 'arn:aws:iam::aws:policy/job-function/ViewOnlyAccess'
+
+# Account Assignment
+  rAccoiunt1Group1AdministratorAccess:
+    Type: AWS::SSO::Assignment
+    Properties: 
+      InstanceArn: !Ref pAwsSsoInsanceArn
+      PermissionSetArn: !GetAtt rPermissionSetAdministratorAccess.PermissionSetArn
+      PrincipalId: !FindInMap [ mGroups, Group1, Id ]
+      PrincipalType: 'GROUP'
+      TargetId: !FindInMap [ mAccounts, Account1, Id ]
+      TargetType: 'AWS_ACCOUNT'
+
+  rAccount2Group1ViewOnlyAccess:
+    Type: AWS::SSO::Assignment
+    Properties: 
+      InstanceArn: !Ref pAwsSsoInsanceArn
+      PermissionSetArn: !GetAtt rPermissionSetViewOnlyAccess.PermissionSetArn
+      PrincipalId: !FindInMap [ mGroups, Group1, Id ]
+      PrincipalType: 'GROUP'
+      TargetId: !FindInMap [ mAccounts, Account2, Id ]
+      TargetType: 'AWS_ACCOUNT'
+
+  rAccount3User1AdministratorAccess:
+    Type: AWS::SSO::Assignment
+    Properties: 
+      InstanceArn: !Ref pAwsSsoInsanceArn
+      PermissionSetArn: !GetAtt rPermissionSetAdministratorAccess.PermissionSetArn
+      PrincipalId: !FindInMap [ mUsers, User1, Id ]
+      PrincipalType: USER'
+      TargetId: !FindInMap [ mAccounts, Account3, Id ]
+      TargetType: 'AWS_ACCOUNT'
+
+  rAccount1Group2SecurityAudit:
+    Type: AWS::SSO::Assignment
+    Properties: 
+      InstanceArn: !Ref pAwsSsoInsanceArn
+      PermissionSetArn: !GetAtt rPermissionSetSecurityAudit.PermissionSetArn
+      PrincipalId: !FindInMap [ mGroups, Group2, Id ]
+      PrincipalType: 'GROUP'
+      TargetId: !FindInMap [ mAccounts, Account1, Id ]
+      TargetType: 'AWS_ACCOUNT'
